@@ -56,6 +56,32 @@ library(lubridate)
 years <- c(2016) # edit for the year(s) you want
 months <- c(1:2)
 
+temp_day <- function(y, m, d, sing_temp){
+  URL <- paste0("https://www.wunderground.com/history/airport/WSSS/", 
+                y, "/", 
+                m, "/",
+                d, "/DailyHistory.html?req_city=Singapore&req_statename=Singapore")
+  print(URL) # try this to test before running the script
+  
+  raw <- read_html(URL)
+  
+  max <- raw %>% 
+    html_nodes(xpath='//*[@id="historyTable"]/tbody/tr[3]/td[2]/span/span[1]')  %>%
+    html_text() %>% as.numeric()
+  min <- raw %>%
+    html_nodes(xpath='//*[@id="historyTable"]/tbody/tr[4]/td[2]/span/span[1]') %>%
+    html_text() %>% as.numeric()
+  
+  date <- ymd(paste(y,m,d, sep="/"))
+  record <- data.frame(cbind(as.character(date), min, max))
+  
+  if ( date == "2016-01-01") {
+    sing_temp <- record
+  } else {
+    sing_temp <- rbind(sing_temp, record)
+  }
+}
+
 for (y in years) {
   for (m in months) {
     if (m == 4 || m==6 || m==9 || m==11) {
@@ -67,34 +93,14 @@ for (y in years) {
     } else {
       days <- c(1:31) # All the rest have 31 days 
     }
+    sing_tmep <- data.frame()
     for (d in days) {
     #for (d in 1) {
-      URL <- paste0("https://www.wunderground.com/history/airport/WSSS/", 
-                    y, "/", 
-                    m, "/",
-                    d, "/DailyHistory.html?req_city=Singapore&req_statename=Singapore")
-      print(URL) # try this to test before running the script
-      
-      raw <- read_html(URL)
-      
-      max <- raw %>% 
-        html_nodes(xpath='//*[@id="historyTable"]/tbody/tr[3]/td[2]/span/span[1]')  %>%
-        html_text() %>% as.numeric()
-      min <- raw %>%
-        html_nodes(xpath='//*[@id="historyTable"]/tbody/tr[4]/td[2]/span/span[1]') %>%
-        html_text() %>% as.numeric()
-      
-      date <- ymd(paste(y,m,d, sep="/"))
-      record <- data.frame(cbind(as.character(date), min, max))
-      
-      if ( date == "2016-01-01") {
-        sing_temp <- record
-      } else {
-        sing_temp <- rbind(sing_temp, record)
-      }
+      sing_temp = temp_day(y, m, d, sing_temp)
     }
   }
 }
+
 
 
 #Eg. 4
